@@ -126,15 +126,7 @@ def title_detail(media_type, tmdb_id):
             Viewing.media_id == media.id
         ).order_by(Viewing.watched_on.desc()).first()
     
-    # Shared diary fallback: if a user has no personal viewing, show the latest viewing for this title by anyone
-    latest_any_viewing = Viewing.query.filter(
-        Viewing.media_id == media.id
-    ).order_by(Viewing.watched_on.desc()).first()
-    if latest_any_viewing is not None:
-        if alex and alex_viewing is None:
-            alex_viewing = latest_any_viewing
-        if carrie and carrie_viewing is None:
-            carrie_viewing = latest_any_viewing
+    # No fallback - only show actual individual user viewings
     
     # Build image URLs
     poster_url = tmdb_client.build_image_url(media.poster_path, 'w500')
@@ -146,3 +138,24 @@ def title_detail(media_type, tmdb_id):
                          carrie_viewing=carrie_viewing,
                          poster_url=poster_url,
                          backdrop_url=backdrop_url)
+
+@bp.route('/title/<media_type>/<int:tmdb_id>', methods=['DELETE'])
+@login_required
+def delete_media(media_type, tmdb_id):
+    """Delete a media item and all associated viewings"""
+    # Find the media record
+    media = Media.query.filter_by(tmdb_id=tmdb_id, media_type=media_type).first()
+    
+    if not media:
+        return jsonify({'error': 'Media not found'}), 404
+    
+    try:
+        # Delete the media record - cascading deletes will handle viewings and tags
+        db.session.delete(media)
+        db.session.commit()
+        
+        return jsonify({'success': True}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Failed to delete media'}), 500

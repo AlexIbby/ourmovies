@@ -15,39 +15,98 @@ def my_diary():
     page = request.args.get('page', 1, type=int)
     per_page = 20
     
-    # Build query with filters - show all viewings (shared diary)
-    query = Viewing.query
+    # Get distinct media IDs to build the diary around unique movies/shows
+    media_query = db.session.query(Media.id).join(Viewing)
     
     # Filter by year
     year_filter = request.args.get('year', type=int)
     if year_filter:
-        query = query.filter(db.extract('year', Viewing.watched_on) == year_filter)
+        media_query = media_query.filter(db.extract('year', Viewing.watched_on) == year_filter)
     
     # Filter by media type
     media_type_filter = request.args.get('media_type')
     if media_type_filter in ['movie', 'tv']:
-        query = query.join(Media).filter(Media.media_type == media_type_filter)
+        media_query = media_query.filter(Media.media_type == media_type_filter)
     
     # Filter by rating
     rating_filter = request.args.get('rating', type=int)
     if rating_filter and 1 <= rating_filter <= 5:
-        query = query.filter(Viewing.rating >= rating_filter)
+        media_query = media_query.filter(Viewing.rating >= rating_filter)
     
     # Filter by tags
     tag_filter = request.args.getlist('tags')
     if tag_filter:
-        query = query.join(viewing_tags).join(Tag).filter(Tag.name.in_(tag_filter))
+        media_query = media_query.join(viewing_tags).join(Tag).filter(Tag.name.in_(tag_filter))
+    
+    # Get unique media IDs
+    media_ids_subquery = media_query.distinct().subquery()
+    
+    # Get media records with their latest viewing for ordering
+    media_query = db.session.query(Media)\
+                           .join(media_ids_subquery, Media.id == media_ids_subquery.c.id)\
+                           .join(Viewing)\
+                           .group_by(Media.id)
     
     # Sort
     sort_by = request.args.get('sort', 'newest')
     if sort_by == 'highest_rated':
-        query = query.order_by(desc(Viewing.rating), desc(Viewing.watched_on))
+        media_query = media_query.order_by(desc(db.func.max(Viewing.rating)), desc(db.func.max(Viewing.watched_on)))
     else:  # newest
-        query = query.order_by(desc(Viewing.watched_on), desc(Viewing.created_at))
+        media_query = media_query.order_by(desc(db.func.max(Viewing.watched_on)))
     
-    viewings = query.paginate(
+    media_pagination = media_query.paginate(
         page=page, per_page=per_page, error_out=False
     )
+    
+    # Get both users' viewings for each media item
+    alex_user = User.query.filter_by(username='alex').first()
+    carrie_user = User.query.filter_by(username='carrie').first()
+    
+    media_items = []
+    for media in media_pagination.items:
+        alex_viewing = None
+        carrie_viewing = None
+        latest_viewing = None
+        
+        if alex_user:
+            alex_viewing = Viewing.query.filter(
+                Viewing.user_id == alex_user.id,
+                Viewing.media_id == media.id
+            ).order_by(Viewing.watched_on.desc()).first()
+        
+        if carrie_user:
+            carrie_viewing = Viewing.query.filter(
+                Viewing.user_id == carrie_user.id,
+                Viewing.media_id == media.id
+            ).order_by(Viewing.watched_on.desc()).first()
+        
+        # Get the latest viewing overall for date display
+        latest_viewing = Viewing.query.filter(
+            Viewing.media_id == media.id
+        ).order_by(Viewing.watched_on.desc()).first()
+        
+        media_items.append({
+            'media': media,
+            'alex_viewing': alex_viewing,
+            'carrie_viewing': carrie_viewing,
+            'latest_viewing': latest_viewing
+        })
+    
+    # Create a pagination-like object for the template
+    class MediaPagination:
+        def __init__(self, items, pagination):
+            self.items = items
+            self.page = pagination.page
+            self.pages = pagination.pages
+            self.has_prev = pagination.has_prev
+            self.has_next = pagination.has_next
+            self.prev_num = pagination.prev_num
+            self.next_num = pagination.next_num
+            
+        def iter_pages(self):
+            return range(1, self.pages + 1)
+    
+    media_viewings = MediaPagination(media_items, media_pagination)
     
     # Get available years and tags for filters
     years = db.session.query(db.extract('year', Viewing.watched_on).label('year'))\
@@ -60,7 +119,7 @@ def my_diary():
                           .distinct().all()
     
     return render_template('diary/list.html', 
-                         viewings=viewings, 
+                         viewings=media_viewings, 
                          years=[y[0] for y in years],
                          tags=user_tags,
                          current_filters={

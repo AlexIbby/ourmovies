@@ -50,7 +50,7 @@
                     <!-- Action Button -->
                     {% set current_user_viewing = alex_viewing if current_user.username == 'alex' else carrie_viewing %}
                     {% if current_user_viewing %}
-                        <div class="flex space-x-3">
+                        <div class="flex flex-wrap gap-3">
                             <button onclick="showAddViewingModal()" 
                                     class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition duration-150">
                                 Add Another Viewing
@@ -59,12 +59,22 @@
                                     class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition duration-150">
                                 Edit My Review
                             </button>
+                            <button onclick="showDeleteMediaModal()" 
+                                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-150">
+                                Delete Movie
+                            </button>
                         </div>
                     {% else %}
-                        <button onclick="showAddViewingModal()" 
-                                class="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition duration-150">
-                            Add to My Diary
-                        </button>
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="showAddViewingModal()" 
+                                    class="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition duration-150">
+                                Add to My Diary
+                            </button>
+                            <button onclick="showDeleteMediaModal()" 
+                                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-150">
+                                Delete Movie
+                            </button>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -83,13 +93,15 @@
                     <div class="space-y-3">
                         <!-- Rating -->
                         <div class="flex items-center space-x-2">
-                            <div class="flex text-yellow-400">
-                                {% for i in range(viewing.rating) %}⭐{% endfor %}
-                                {% if viewing.rating < 5 %}
-                                    {% for i in range(5 - viewing.rating) %}
-                                        <span class="text-gray-300 dark:text-gray-600">⭐</span>
-                                    {% endfor %}
-                                {% endif %}
+                            <div class="flex">
+                                {% set rating = viewing.rating | int %}
+                                {% for i in range(1, 6) %}
+                                    {% if i <= rating %}
+                                        <span class="text-yellow-400">⭐</span>
+                                    {% else %}
+                                        <span class="text-gray-300 dark:text-gray-600">☆</span>
+                                    {% endif %}
+                                {% endfor %}
                             </div>
                             <span class="text-sm text-gray-600 dark:text-gray-400">
                                 {{ viewing.rating }}/5
@@ -183,6 +195,49 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div id="delete-modal" class="fixed inset-0 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black opacity-50" onclick="hideDeleteModal()"></div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-auto z-50">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="flex-shrink-0 w-10 h-10 mx-auto bg-red-100 rounded-full flex items-center justify-center sm:mx-0 sm:h-10 sm:w-10">
+                        <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            Delete Movie
+                        </h3>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Are you sure you want to delete "<strong>{{ media.title }}</strong>"? This will permanently remove the movie and <strong>all viewing records</strong> from both Alex and Carrie's diaries.
+                    </p>
+                    <p class="text-sm text-red-600 dark:text-red-400 mt-2 font-medium">
+                        This action cannot be undone.
+                    </p>
+                </div>
+                
+                <div class="flex flex-col-reverse sm:flex-row sm:space-x-3">
+                    <button onclick="hideDeleteModal()" 
+                            class="mt-3 sm:mt-0 w-full sm:w-auto px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-lg transition duration-150">
+                        Cancel
+                    </button>
+                    <button onclick="confirmDeleteMedia()" 
+                            class="w-full sm:w-auto px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-150">
+                        Delete Movie
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function showAddViewingModal() {
     fetch('{{ url_for("diary.add_viewing_modal", media_type=media.media_type, tmdb_id=media.tmdb_id) }}')
@@ -207,10 +262,40 @@ function hideViewingModal() {
     document.getElementById('viewing-modal-content').innerHTML = '';
 }
 
+function showDeleteMediaModal() {
+    document.getElementById('delete-modal').classList.remove('hidden');
+}
+
+function hideDeleteModal() {
+    document.getElementById('delete-modal').classList.add('hidden');
+}
+
+function confirmDeleteMedia() {
+    fetch('{{ url_for("media.delete_media", media_type=media.media_type, tmdb_id=media.tmdb_id) }}', {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            // Redirect to search or home page after successful deletion
+            window.location.href = '/';
+        } else {
+            alert('Failed to delete movie. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to delete movie. Please try again.');
+    });
+}
+
 // Close modal on escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         hideViewingModal();
+        hideDeleteModal();
     }
 });
 
