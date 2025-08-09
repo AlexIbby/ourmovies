@@ -104,17 +104,28 @@
 
 .modal-form .star {
     font-size: 1.5rem;
-    color: #4b5563;
+    color: #6b7280;
     cursor: pointer;
-    transition: color 0.15s ease-in-out;
+    transition: all 0.15s ease-in-out;
     user-select: none;
-    opacity: 0.3;
+    opacity: 0.5;
+    filter: grayscale(100%);
+    outline: none;
 }
 
 .modal-form .star:hover,
-.modal-form .star.active {
-    color: #fbbf24;
+.modal-form .star.active,
+.modal-form .star:focus {
+    color: #f59e0b;
     opacity: 1;
+    filter: grayscale(0%);
+    transform: scale(1.15);
+    text-shadow: 0 0 6px rgba(245,158,11,0.45);
+}
+
+.modal-form .star:focus-visible {
+    box-shadow: 0 0 0 3px rgba(245,158,11,0.5);
+    border-radius: 4px;
 }
 
 .modal-form .form-section {
@@ -178,12 +189,46 @@
 .modal-form .close-btn:hover {
     color: #f9fafb;
 }
+
+.modal-form .tag-chip {
+    border: 2px solid transparent;
+    border-radius: 1rem;
+    transition: all 0.2s ease-in-out;
+    position: relative;
+}
+
+.modal-form .tag-chip:hover .tag-label {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border: 2px solid #60a5fa;
+}
+
+.modal-form .tag-chip.selected {
+    border-color: #2563eb;
+    transform: scale(1.05);
+    animation: pulse-selected 0.3s ease-out;
+}
+
+.modal-form .tag-chip.selected .tag-label {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+    color: white !important;
+    border: 3px solid #1d4ed8 !important;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.4), 0 6px 16px rgba(37, 99, 235, 0.6) !important;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes pulse-selected {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1.05); }
+}
 </style>
 
 <div class="modal-form">
     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
         <h3>Edit Review</h3>
-        <button onclick="hideViewingModal()" class="close-btn">
+        <button onclick="hideViewingModal()" class="close-btn" aria-label="Close edit review modal">
             <svg style="width: 1.5rem; height: 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -211,7 +256,7 @@
     </div>
     
     <form method="POST" action="{{ url_for('diary.update_viewing', viewing_id=viewing.id) }}" 
-          hx-put="{{ url_for('diary.update_viewing', viewing_id=viewing.id) }}" 
+          hx-post="{{ url_for('diary.update_viewing', viewing_id=viewing.id) }}" 
           hx-target="#viewing-modal-content" 
           hx-swap="innerHTML">
         {{ form.hidden_tag() }}
@@ -221,11 +266,19 @@
         <!-- Rating -->
         <div class="form-section">
             <label>{{ form.rating.label.text }}</label>
-            <div style="display: flex; gap: 0.25rem;">
+            <div data-rating-container style="display: flex; gap: 0.25rem;" role="radiogroup" aria-label="Rating from 1 to 5 stars">
                 {% for value in range(1, 6) %}
-                    <label style="margin: 0;">
-                        <input type="radio" name="rating" value="{{ value }}" style="display: none;" class="rating-input" {% if form.rating.data == value %}checked{% endif %}>
-                        <span class="star" data-rating="{{ value }}">⭐</span>
+                    <label style="margin:0;">
+                        <input type="radio" name="rating" value="{{ value }}" style="display:none;" class="rating-input" 
+                               {% if viewing.rating == value %}checked{% endif %} aria-hidden="true">
+                        <span class="star {% if viewing.rating and value <= viewing.rating %}active{% endif %}"
+                              data-star="{{ value }}"
+                              role="radio"
+                              tabindex="0"
+                              aria-checked="{{ 'true' if viewing.rating == value else 'false' }}"
+                              aria-label="{{ value }} star{% if value > 1 %}s{% endif %}">
+                            ⭐
+                        </span>
                     </label>
                 {% endfor %}
             </div>
@@ -236,8 +289,21 @@
         
         <!-- Tags -->
         <div class="form-section">
-            <label for="{{ form.tags.id }}">{{ form.tags.label.text }}</label>
-            {{ form.tags(placeholder="Enter tags separated by commas") }}
+            <label>Tags</label>
+            {% set selected_tags = form.tags.data.lower().replace(' ', '').split(',') if form.tags.data else [] %}
+            <div data-tags-container class="tag-selection" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                {% for tag in available_tags %}
+                {% set is_selected = tag.id|string in viewing.tags|map(attribute='id')|map('string')|list %}
+                <label class="tag-chip {% if is_selected %}selected{% endif %}" data-tag-label="{{ tag.id }}" style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox" name="tags" value="{{ tag.id }}" style="display: none;" class="tag-checkbox" 
+                           {% if is_selected %}checked{% endif %}>
+                    <span class="tag-label" style="padding: 0.375rem 0.75rem; border-radius: 1rem; font-size: 0.875rem; font-weight: 500; background-color: {{ tag.color or '#E8E8E8' }}; color: #1f2937; transition: all 0.2s ease-in-out; border: 2px solid transparent;">
+                        {{ tag.name|title }}
+                    </span>
+                </label>
+                {% endfor %}
+            </div>
+            {{ form.tags(style="display: none;") }}
             {% for error in form.tags.errors %}
                 <p style="margin-top: 0.25rem; font-size: 0.875rem; color: #dc2626;">{{ error }}</p>
             {% endfor %}
@@ -280,73 +346,131 @@
 </div>
 
 <script>
-// Initialize stars based on form data
+// Star rating (keyboard + mouse)
+function setupStarRating() {
+    const stars = document.querySelectorAll('.star');
+    if (!stars.length) return;
+    stars.forEach(star => {
+        star.addEventListener('click', () => setRating(parseInt(star.dataset.rating)));
+        star.addEventListener('mouseenter', () => updateStarDisplay(parseInt(star.dataset.rating)));
+        star.addEventListener('keydown', (e) => {
+            const current = getCurrentRating();
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault(); setRating(parseInt(star.dataset.rating));
+            } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+                e.preventDefault(); setRating(Math.min(5, (current || 0) + 1)); focusStar(getCurrentRating());
+            } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+                e.preventDefault(); setRating(Math.max(1, (current || 2) - 1)); focusStar(getCurrentRating());
+            }
+        });
+    });
+    stars[0].closest('[role="radiogroup"]').addEventListener('mouseleave', () => {
+        updateStarDisplay(getCurrentRating());
+    });
+}
+function setRating(r) {
+    const input = document.querySelector('input[name="rating"][value="' + r + '"]');
+    if (input) input.checked = true;
+    updateStarDisplay(r);
+}
+function getCurrentRating() {
+    const checked = document.querySelector('input[name="rating"]:checked');
+    return checked ? parseInt(checked.value) : 0;
+}
+function focusStar(r) {
+    const star = document.querySelector('.star[data-star="' + r + '"]');
+    star && star.focus();
+}
+function updateStarDisplay(r) {
+    document.querySelectorAll('.star').forEach(star => {
+        const val = parseInt(star.dataset.rating);
+        const active = val <= r;
+        star.classList.toggle('active', active);
+        star.setAttribute('aria-checked', active && val === r ? 'true' : 'false');
+    });
+}
 function initializeStars() {
-    const checkedRating = document.querySelector('input[name="rating"]:checked');
-    const rating = checkedRating ? parseInt(checkedRating.value) : 0;
+    setupStarRating();
+    updateStarDisplay(getCurrentRating());
+}
+
+// Tags
+function initializeTags() {
+    const tagsInput = document.querySelector('input[name="tags"]');
     
-    document.querySelectorAll('.star').forEach((s, index) => {
-        if (index < rating) {
-            s.style.color = '#fbbf24';
-            s.style.opacity = '1';
-            s.classList.add('active');
-        } else {
-            s.style.color = '#4b5563';
-            s.style.opacity = '0.3';
-            s.classList.remove('active');
+    // For edit modal: pre-select existing tags
+    const existing = (tagsInput ? tagsInput.value : '')
+        .split(',')
+        .map(t => t.trim().toLowerCase())
+        .filter(Boolean);
+
+    document.querySelectorAll('.tag-checkbox').forEach(cb => {
+        const selected = existing.includes(cb.value.toLowerCase());
+        cb.checked = selected;
+        const chip = cb.closest('.tag-chip');
+        if (chip) {
+            chip.classList.toggle('selected', selected);
+        }
+    });
+    
+    updateTagsInput();
+
+    const container = document.querySelector('.tag-selection');
+    if (container && !container.dataset.bound) {
+        container.dataset.bound = '1';
+        container.addEventListener('click', e => {
+            const chip = e.target.closest('.tag-chip');
+            if (!chip) return;
+            const cb = chip.querySelector('.tag-checkbox');
+            if (!cb) return;
+            cb.checked = !cb.checked;
+            chip.classList.toggle('selected', cb.checked);
+            updateTagsInput();
+        });
+        container.addEventListener('keydown', e => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const chip = e.target.closest('.tag-chip');
+            if (!chip) return;
+            e.preventDefault();
+            const cb = chip.querySelector('.tag-checkbox');
+            cb.checked = !cb.checked;
+            chip.classList.toggle('selected', cb.checked);
+            updateTagsInput();
+        });
+        container.querySelectorAll('.tag-chip').forEach(chip => chip.setAttribute('tabindex','0'));
+    }
+}
+function updateTagsInput() {
+    const tagsInput = document.querySelector('input[name="tags"]');
+    if (!tagsInput) return;
+    const selected = Array.from(document.querySelectorAll('.tag-checkbox:checked')).map(cb => cb.value);
+    tagsInput.value = selected.join(', ');
+}
+
+// Validation
+function setupFormValidation() {
+    const form = document.querySelector('form');
+    if (!form || form.dataset.bound) return;
+    form.dataset.bound = '1';
+    form.addEventListener('submit', e => {
+        if (!document.querySelector('input[name="rating"]:checked')) {
+            e.preventDefault();
+            alert('Please select a rating');
         }
     });
 }
 
-// Star rating functionality
-document.querySelectorAll('.star').forEach(star => {
-    star.addEventListener('click', function() {
-        const rating = parseInt(this.dataset.rating);
-        const ratingInput = document.querySelector('input[name="rating"][value="' + rating + '"]');
-        if (ratingInput) {
-            ratingInput.checked = true;
-        }
-        
-        // Update star display
-        document.querySelectorAll('.star').forEach((s, index) => {
-            if (index < rating) {
-                s.classList.add('active');
-            } else {
-                s.classList.remove('active');
-            }
-        });
-    });
-    
-    star.addEventListener('mouseenter', function() {
-        const rating = parseInt(this.dataset.rating);
-        document.querySelectorAll('.star').forEach((s, index) => {
-            if (index < rating) {
-                s.style.color = '#fbbf24';
-                s.style.opacity = '1';
-            } else {
-                s.style.color = '#4b5563';
-                s.style.opacity = '0.3';
-            }
-        });
-    });
-});
+function initializeModal() {
+    initializeStars();
+    initializeTags();
+    setupFormValidation();
+}
 
-// Initialize stars when modal loads
-initializeStars();
+initializeModal();
 
-// Reset stars on mouse leave
-document.querySelector('.modal-form').addEventListener('mouseleave', function() {
-    const checkedRating = document.querySelector('input[name="rating"]:checked');
-    const rating = checkedRating ? parseInt(checkedRating.value) : 0;
-    
-    document.querySelectorAll('.star').forEach((s, index) => {
-        if (index < rating) {
-            s.style.color = '#fbbf24';
-            s.style.opacity = '1';
-        } else {
-            s.style.color = '#4b5563';
-            s.style.opacity = '0.3';
-        }
-    });
+document.addEventListener('htmx:afterSwap', e => {
+    if (e.detail.target && e.detail.target.id === 'viewing-modal-content') {
+        initializeModal();
+    }
 });
 </script>

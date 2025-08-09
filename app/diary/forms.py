@@ -6,9 +6,9 @@ from datetime import date
 class ViewingForm(FlaskForm):
     tmdb_id = HiddenField(validators=[DataRequired()])
     media_type = HiddenField(validators=[DataRequired()])
-    rating = IntegerField('Rating', validators=[DataRequired(), NumberRange(min=1, max=5)])
+    rating = HiddenField('Rating', validators=[DataRequired(), NumberRange(min=1, max=5)])
     comment = TextAreaField('Comment', validators=[Optional(), Length(max=1000)])
     watched_on = DateField('Date Watched', default=date.today, validators=[DataRequired()])
     rewatch = BooleanField('Rewatch', default=False)
-    tags = StringField('Tags')  # Will be handled specially for tag chips
+    tags = HiddenField('Tags')  # Will be handled specially for tag chips
     submit = SubmitField('Save Viewing')

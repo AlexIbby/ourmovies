@@ -12,7 +12,8 @@
       "Bash(.venvScriptsactivate)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(ruff check:*)"
+      "Bash(ruff check:*)",
+      "Bash(rm:*)"
     ],
     "deny": []
   }

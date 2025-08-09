@@ -1,0 +1,5 @@
+[data-rating-container] [data-star] .fa-star { opacity: 0.35; transition: opacity .15s; }
+[data-rating-container] [data-star].is-selected .fa-star { opacity: 1; }
+
+[data-tags-container] .tag-label { opacity: 0.6; transition: background .15s, opacity .15s; }
+[data-tags-container] .tag-label.is-selected { opacity: 1; background: var(--tag-selected-bg, #ffd966); }

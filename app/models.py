@@ -75,17 +75,20 @@ class Tag(db.Model):
     __tablename__ = 'tags'
     
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.Text, unique=True, nullable=False)
-    slug = db.Column(db.Text, unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    @staticmethod
-    def create_slug(name):
-        import re
-        return re.sub(r'[^\w\s-]', '', name.lower().strip()).replace(' ', '-')
-    
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
     def __repr__(self):
-        return f'<Tag {self.name}>'
+        return f'<Tag "{self.name}">'
+
+class Review(db.Model):
+    __tablename__ = "reviews"
+    id = db.Column(db.Integer, primary_key=True)
+    rating = db.Column(db.Integer, nullable=False)
+    content = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    def __repr__(self):
+        return f"<Review id={self.id} rating={self.rating}>"
 
 # Many-to-many relationship table
 viewing_tags = db.Table('viewing_tags',

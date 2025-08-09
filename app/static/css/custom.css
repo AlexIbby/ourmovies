@@ -33,6 +33,13 @@ h1, h2, h3, h4, h5, h6 {
     transform: scale(1.1);
 }
 
+/* Selected state for stars in edit form */
+.star.is-selected {
+    color: #f59e0b;
+    opacity: 1;
+    filter: grayscale(0%);
+}
+
 /* Form styling */
 .form-label {
     font-weight: 500;
@@ -139,11 +146,71 @@ select:focus {
     border-radius: 9999px;
     font-size: 0.875rem;
     font-weight: 500;
+    border: 2px solid transparent;
+    transition: all 0.15s ease-in-out;
+    cursor: pointer;
 }
 
 .dark .tag-chip {
     background-color: #374151;
     color: #d1d5db;
+}
+
+/* Colored tag chips (pastel colors) */
+.tag-chip.colored {
+    color: #1f2937 !important; /* Dark text for better contrast with pastel backgrounds */
+    border: 2px solid transparent;
+}
+
+.tag-chip.colored:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.tag-chip.is-selected,
+.tag-chip.selected {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px #3b82f6;
+    transform: scale(1.05);
+}
+
+.dark .tag-chip.is-selected,
+.dark .tag-chip.selected {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 2px #60a5fa;
+}
+
+/* Tag display variations */
+.tag-display {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #1f2937;
+    white-space: nowrap;
+}
+
+.tag-display.small {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.6875rem;
+}
+
+/* Tag selection in forms */
+.tag-selection {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.tag-selection .tag-chip {
+    user-select: none;
+}
+
+.tag-selection input[type="checkbox"] {
+    display: none;
 }
 
 /* Ensure modal content is properly styled */

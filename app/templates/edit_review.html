@@ -1,0 +1,36 @@
+<form id="edit-review-form" method="post" action="{{ url_for('reviews.update', review_id=review.id) }}">
+  <!-- ...existing code... -->
+  <div data-rating-container class="rating">
+    <!-- Example pattern (repeat for each star); keep existing radio inputs -->
+    <!-- ...existing code for radio inputs... -->
+    <!-- Wrap each visible star icon (could be <span> or <i>) with data-star attribute matching radio value -->
+    <!-- Example (do for values 1..5): -->
+    <!--
+    <span data-star="1" class="star">
+      <input type="radio" name="rating" value="1" {% if review.rating == 1 %}checked{% endif %}>
+      <i class="fa fa-star"></i>
+    </span>
+    -->
+    <!-- ...existing code... -->
+  </div>
+
+  <div data-tags-container class="tags">
+    <!-- For each tag checkbox, add data-tag-label on its visual label element -->
+    <!--
+    <label data-tag-label="{{ tag.id }}" class="tag-label">
+      <input type="checkbox" name="tags" value="{{ tag.id }}" {% if tag.id in review.tag_ids %}checked{% endif %}>
+      {{ tag.name }}
+    </label>
+    -->
+    <!-- ...existing code... -->
+  </div>
+  <!-- ...existing code... -->
+</form>
+<!-- Include JS (ensure after form or with defer) -->
+<script src="{{ url_for('static', filename='js/review.js') }}" defer></script>
+<!-- If this template is injected dynamically (AJAX), call: -->
+<script>
+// If injected dynamically without full reload, call initialization explicitly:
+window.initReviewUI && window.initReviewUI(document.currentScript.closest('form')?.parentElement || document);
+</script>
+<!-- ...existing code... -->

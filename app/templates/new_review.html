@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Review</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <h1>Write a Review for {{ movie.title }}</h1>
+    <form id="new-review-form" method="post" action="{{ url_for('reviews.create', movie_id=movie.id) }}">
+        <!-- ...existing form fields... -->
+        <div data-rating-container class="rating">
+            <!-- ...existing radio + star wrappers each with data-star="N" ... -->
+        </div>
+        <div data-tags-container class="tags">
+            <!-- Each tag label gets data-tag-label="{{ tag.id }}" -->
+        </div>
+        <!-- ...existing form fields... -->
+        <button type="submit">Submit Review</button>
+    </form>
+    <script src="{{ url_for('static', filename='js/review.js') }}" defer></script>
+</body>
+</html>

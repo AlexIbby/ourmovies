@@ -7,7 +7,7 @@
     
     <!-- Filters -->
     <div class="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+        <div class="grid grid-cols-2 lg:grid-cols-7 gap-4 items-end">
             <!-- Year Filter -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year</label>
@@ -41,6 +41,19 @@
                     <option value="3" {% if current_filters.rating == 3 %}selected{% endif %}>⭐⭐⭐ 3+ stars</option>
                     <option value="2" {% if current_filters.rating == 2 %}selected{% endif %}>⭐⭐ 2+ stars</option>
                     <option value="1" {% if current_filters.rating == 1 %}selected{% endif %}>⭐ 1+ star</option>
+                </select>
+            </div>
+            
+            <!-- Tags Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags</label>
+                <select name="tags" form="filter-form" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                    <option value="">All Tags</option>
+                    {% for tag in tags %}
+                        <option value="{{ tag.name }}" {% if tag.name in current_filters.tags %}selected{% endif %}>
+                            {{ tag.name }}
+                        </option>
+                    {% endfor %}
                 </select>
             </div>
             
@@ -162,17 +175,28 @@
                             </div>
                         {% endif %}
                         
-                        <!-- Tags from most recent viewing -->
-                        {% set viewing_with_tags = alex_viewing if alex_viewing and alex_viewing.tags else carrie_viewing %}
-                        {% if viewing_with_tags and viewing_with_tags.tags %}
-                            <div class="mt-2">
-                                {% for tag in viewing_with_tags.tags[:2] %}
-                                    <span class="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded mr-1">
-                                        {{ tag.name }}
+                        <!-- Tags from both users' viewings -->
+                        {% set all_tags = [] %}
+                        {% if alex_viewing and alex_viewing.tags %}
+                            {% set all_tags = all_tags + alex_viewing.tags %}
+                        {% endif %}
+                        {% if carrie_viewing and carrie_viewing.tags %}
+                            {% for tag in carrie_viewing.tags %}
+                                {% if tag not in all_tags %}
+                                    {% set all_tags = all_tags + [tag] %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        {% if all_tags %}
+                            <div class="mt-2 flex flex-wrap gap-1">
+                                {% for tag in all_tags[:3] %}
+                                    <span class="inline-block px-2 py-1 text-xs rounded-full font-medium"
+                                          style="background-color: {{ tag.color or '#E8E8E8' }}; color: #1f2937;">
+                                        {{ tag.name|title }}
                                     </span>
                                 {% endfor %}
-                                {% if viewing_with_tags.tags|length > 2 %}
-                                    <span class="text-xs text-gray-400">+{{ viewing_with_tags.tags|length - 2 }}</span>
+                                {% if all_tags|length > 3 %}
+                                    <span class="text-xs text-gray-400 self-center">+{{ all_tags|length - 3 }}</span>
                                 {% endif %}
                             </div>
                         {% endif %}

@@ -1,8 +1,8 @@
 import os
 from flask import Flask
 from .config import config
-from .extensions import init_extensions, login_manager
-from .models import User
+from .extensions import init_extensions, login_manager, db  # use shared db
+from .models import User, Tag
 
 def create_app(config_name=None):
     if config_name is None:
@@ -14,7 +14,12 @@ def create_app(config_name=None):
     # Initialize config (fix database URL if needed)
     config[config_name].init_app(app)
     
-    # Initialize extensions
+    # Configure the database
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    # Removed separate db.init_app(app); init_extensions will handle it
+    
     init_extensions(app)
     
     # User loader for Flask-Login
@@ -33,6 +38,9 @@ def create_app(config_name=None):
     from .diary import bp as diary_bp
     app.register_blueprint(diary_bp)
     
+    from .routes import main as main_blueprint
+    app.register_blueprint(main_blueprint)
+
     # Main routes
     @app.route('/')
     def index():

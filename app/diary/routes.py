@@ -34,9 +34,9 @@ def my_diary():
         media_query = media_query.filter(Viewing.rating >= rating_filter)
     
     # Filter by tags
-    tag_filter = request.args.getlist('tags')
+    tag_filter = request.args.get('tags')
     if tag_filter:
-        media_query = media_query.join(viewing_tags).join(Tag).filter(Tag.name.in_(tag_filter))
+        media_query = media_query.join(viewing_tags).join(Tag).filter(Tag.name == tag_filter)
     
     # Get unique media IDs
     media_ids_subquery = media_query.distinct().subquery()
@@ -126,7 +126,7 @@ def my_diary():
                              'year': year_filter,
                              'media_type': media_type_filter,
                              'rating': rating_filter,
-                             'tags': tag_filter,
+                             'tags': [tag_filter] if tag_filter else [],
                              'sort': sort_by
                          },
                          page_title="Our Diary")
@@ -179,12 +179,16 @@ def add_viewing_modal(media_type, tmdb_id):
     form.tmdb_id.data = tmdb_id
     form.media_type.data = media_type
     
+    # Get all available tags for selection
+    available_tags = Tag.query.order_by(Tag.name).all()
+    
     poster_url = tmdb_client.build_image_url(media.poster_path, 'w342')
     
     return render_template('components/_add_viewing_modal.html', 
                          form=form, 
                          media=media,
-                         poster_url=poster_url)
+                         poster_url=poster_url,
+                         available_tags=available_tags)
 
 @bp.route('/viewing', methods=['POST'])
 @login_required
@@ -253,11 +257,13 @@ def create_viewing():
         
         if media:
             from ..media.tmdb import tmdb_client
+            available_tags = Tag.query.order_by(Tag.name).all()
             poster_url = tmdb_client.build_image_url(media.poster_path, 'w342')
             return render_template('components/_add_viewing_modal.html', 
                                  form=form, 
                                  media=media,
-                                 poster_url=poster_url)
+                                 poster_url=poster_url,
+                                 available_tags=available_tags)
     
     # Non-HTMX request - flash errors and redirect
     for field, errors in form.errors.items():
@@ -289,15 +295,19 @@ def edit_viewing_modal(viewing_id):
     form.rewatch.data = viewing.rewatch
     form.tags.data = ', '.join([tag.name for tag in viewing.tags])
     
+    # Get all available tags for selection
+    available_tags = Tag.query.order_by(Tag.name).all()
+    
     poster_url = tmdb_client.build_image_url(media.poster_path, 'w342')
     
     return render_template('components/_edit_viewing_modal.html', 
                          form=form, 
                          media=media,
                          viewing=viewing,
-                         poster_url=poster_url)
+                         poster_url=poster_url,
+                         available_tags=available_tags)
 
-@bp.route('/viewing/<int:viewing_id>', methods=['PUT'])
+@bp.route('/viewing/<int:viewing_id>', methods=['POST', 'PUT'])
 @login_required
 def update_viewing(viewing_id):
     """Update an existing viewing"""
@@ -314,47 +324,47 @@ def update_viewing(viewing_id):
         viewing.rating = form.rating.data
         viewing.comment = form.comment.data
         viewing.watched_on = form.watched_on.data
-        viewing.with_partner = True  # Always True since this is a shared diary
         viewing.rewatch = form.rewatch.data
         
         # Clear existing tags
-        viewing.tags.clear()
+        viewing.tags = []
         
         # Handle new tags
         if form.tags.data:
-            tag_names = [name.strip() for name in form.tags.data.split(',') if name.strip()]
+            # Split and clean tag names
+            tag_names = [name.strip().lower() for name in form.tags.data.split(',') if name.strip()]
+            
+            # Get or create each tag
             for tag_name in tag_names:
-                tag = Tag.query.filter_by(name=tag_name.lower()).first()
+                tag = Tag.query.filter_by(name=tag_name).first()
                 if not tag:
-                    tag = Tag(
-                        name=tag_name.lower(),
-                        slug=Tag.create_slug(tag_name)
-                    )
+                    tag = Tag(name=tag_name, slug=Tag.create_slug(tag_name))
                     db.session.add(tag)
-                    db.session.flush()
                 viewing.tags.append(tag)
         
-        db.session.commit()
-        flash(f'Updated viewing for {viewing.media.title}!', 'success')
-        
-        # If HTMX request, return a response that triggers modal close and page refresh
-        if request.headers.get('HX-Request'):
-            from flask import make_response
-            response = make_response('')
-            response.headers['HX-Trigger'] = 'viewing-updated'
-            return response
-        
-        return redirect(url_for('diary.my_diary'))
+        try:
+            db.session.commit()
+            # If HTMX request, trigger refresh
+            if request.headers.get('HX-Request'):
+                response = make_response('')
+                response.headers['HX-Trigger'] = 'viewing-updated'
+                return response
+            return redirect(url_for('diary.my_diary'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Error updating review: ' + str(e), 'error')
     
     # Form validation failed
     if request.headers.get('HX-Request'):
         media = viewing.media
+        available_tags = Tag.query.order_by(Tag.name).all()
         poster_url = tmdb_client.build_image_url(media.poster_path, 'w342')
         return render_template('components/_edit_viewing_modal.html', 
                              form=form, 
                              media=media,
                              viewing=viewing,
-                             poster_url=poster_url)
+                             poster_url=poster_url,
+                             available_tags=available_tags)
     
     # Non-HTMX request - flash errors and redirect
     for field, errors in form.errors.items():
