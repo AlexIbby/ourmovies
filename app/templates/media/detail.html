@@ -99,7 +99,6 @@
                         <!-- Date -->
                         <p class="text-sm text-gray-600 dark:text-gray-400">
                             Watched on {{ viewing.watched_on.strftime('%B %d, %Y') }}
-                            {% if viewing.with_partner %} • Together{% endif %}
                             {% if viewing.rewatch %} • Rewatch{% endif %}
                         </p>
                         
@@ -186,23 +185,21 @@
 
 <script>
 function showAddViewingModal() {
-    // Load modal content via HTMX
-    htmx.ajax('GET', '{{ url_for("diary.add_viewing_modal", media_type=media.media_type, tmdb_id=media.tmdb_id) }}', {
-        target: '#viewing-modal-content',
-        swap: 'innerHTML'
-    }).then(() => {
-        document.getElementById('viewing-modal').classList.remove('hidden');
-    });
+    fetch('{{ url_for("diary.add_viewing_modal", media_type=media.media_type, tmdb_id=media.tmdb_id) }}')
+        .then(r => r.text())
+        .then(html => {
+            document.querySelector('#viewing-modal-content').innerHTML = html;
+            document.getElementById('viewing-modal').classList.remove('hidden');
+        });
 }
 
 function showEditViewingModal(viewingId) {
-    // Load edit modal content via HTMX
-    htmx.ajax('GET', `/viewing/edit/${viewingId}`, {
-        target: '#viewing-modal-content',
-        swap: 'innerHTML'
-    }).then(() => {
-        document.getElementById('viewing-modal').classList.remove('hidden');
-    });
+    fetch('/viewing/edit/' + viewingId)
+        .then(r => r.text())
+        .then(html => {
+            document.querySelector('#viewing-modal-content').innerHTML = html;
+            document.getElementById('viewing-modal').classList.remove('hidden');
+        });
 }
 
 function hideViewingModal() {

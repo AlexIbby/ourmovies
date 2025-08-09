@@ -115,18 +115,26 @@ def title_detail(media_type, tmdb_id):
     carrie_viewing = None
     
     if alex:
-        # Get Alex's viewing or a shared viewing by either user
         alex_viewing = Viewing.query.filter(
-            (Viewing.user_id == alex.id) | 
-            ((Viewing.with_partner == True) & (Viewing.media_id == media.id))
-        ).filter(Viewing.media_id == media.id).order_by(Viewing.watched_on.desc()).first()
+            Viewing.user_id == alex.id,
+            Viewing.media_id == media.id
+        ).order_by(Viewing.watched_on.desc()).first()
     
     if carrie:
-        # Get Carrie's viewing or a shared viewing by either user  
         carrie_viewing = Viewing.query.filter(
-            (Viewing.user_id == carrie.id) |
-            ((Viewing.with_partner == True) & (Viewing.media_id == media.id))
-        ).filter(Viewing.media_id == media.id).order_by(Viewing.watched_on.desc()).first()
+            Viewing.user_id == carrie.id,
+            Viewing.media_id == media.id
+        ).order_by(Viewing.watched_on.desc()).first()
+    
+    # Shared diary fallback: if a user has no personal viewing, show the latest viewing for this title by anyone
+    latest_any_viewing = Viewing.query.filter(
+        Viewing.media_id == media.id
+    ).order_by(Viewing.watched_on.desc()).first()
+    if latest_any_viewing is not None:
+        if alex and alex_viewing is None:
+            alex_viewing = latest_any_viewing
+        if carrie and carrie_viewing is None:
+            carrie_viewing = latest_any_viewing
     
     # Build image URLs
     poster_url = tmdb_client.build_image_url(media.poster_path, 'w500')

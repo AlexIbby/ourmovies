@@ -11,12 +11,12 @@ from datetime import datetime, date
 @bp.route('/diary/me')
 @login_required
 def my_diary():
-    """Show current user's diary"""
+    """Show shared diary (all viewings from both users)"""
     page = request.args.get('page', 1, type=int)
     per_page = 20
     
-    # Build query with filters
-    query = Viewing.query.filter_by(user_id=current_user.id)
+    # Build query with filters - show all viewings (shared diary)
+    query = Viewing.query
     
     # Filter by year
     year_filter = request.args.get('year', type=int)
@@ -51,14 +51,12 @@ def my_diary():
     
     # Get available years and tags for filters
     years = db.session.query(db.extract('year', Viewing.watched_on).label('year'))\
-                     .filter_by(user_id=current_user.id)\
                      .distinct()\
                      .order_by(desc('year')).all()
     
     user_tags = db.session.query(Tag)\
                           .join(viewing_tags)\
                           .join(Viewing)\
-                          .filter(Viewing.user_id == current_user.id)\
                           .distinct().all()
     
     return render_template('diary/list.html', 
@@ -72,69 +70,13 @@ def my_diary():
                              'tags': tag_filter,
                              'sort': sort_by
                          },
-                         page_title="My Diary")
+                         page_title="Our Diary")
 
 @bp.route('/diary/together')
 @login_required
 def together_diary():
-    """Show together viewings from both users"""
-    page = request.args.get('page', 1, type=int)
-    per_page = 20
-    
-    # Build query for together viewings
-    query = Viewing.query.filter_by(with_partner=True)
-    
-    # Apply same filters as my_diary
-    year_filter = request.args.get('year', type=int)
-    if year_filter:
-        query = query.filter(db.extract('year', Viewing.watched_on) == year_filter)
-    
-    media_type_filter = request.args.get('media_type')
-    if media_type_filter in ['movie', 'tv']:
-        query = query.join(Media).filter(Media.media_type == media_type_filter)
-    
-    rating_filter = request.args.get('rating', type=int)
-    if rating_filter and 1 <= rating_filter <= 5:
-        query = query.filter(Viewing.rating >= rating_filter)
-    
-    tag_filter = request.args.getlist('tags')
-    if tag_filter:
-        query = query.join(viewing_tags).join(Tag).filter(Tag.name.in_(tag_filter))
-    
-    sort_by = request.args.get('sort', 'newest')
-    if sort_by == 'highest_rated':
-        query = query.order_by(desc(Viewing.rating), desc(Viewing.watched_on))
-    else:
-        query = query.order_by(desc(Viewing.watched_on), desc(Viewing.created_at))
-    
-    viewings = query.paginate(
-        page=page, per_page=per_page, error_out=False
-    )
-    
-    # Get available years and tags for filters
-    years = db.session.query(db.extract('year', Viewing.watched_on).label('year'))\
-                     .filter_by(with_partner=True)\
-                     .distinct()\
-                     .order_by(desc('year')).all()
-    
-    together_tags = db.session.query(Tag)\
-                             .join(viewing_tags)\
-                             .join(Viewing)\
-                             .filter(Viewing.with_partner == True)\
-                             .distinct().all()
-    
-    return render_template('diary/list.html', 
-                         viewings=viewings,
-                         years=[y[0] for y in years],
-                         tags=together_tags,
-                         current_filters={
-                             'year': year_filter,
-                             'media_type': media_type_filter,
-                             'rating': rating_filter,
-                             'tags': tag_filter,
-                             'sort': sort_by
-                         },
-                         page_title="Together")
+    """Redirect to shared diary since everything is shared now"""
+    return redirect(url_for('diary.my_diary', **request.args))
 
 @bp.route('/viewing/add/<media_type>/<int:tmdb_id>')
 @login_required
@@ -209,7 +151,7 @@ def create_viewing():
             rating=form.rating.data,
             comment=form.comment.data,
             watched_on=form.watched_on.data,
-            with_partner=form.with_partner.data,
+            with_partner=True,  # Always True since this is a shared diary
             rewatch=form.rewatch.data
         )
         
@@ -284,7 +226,7 @@ def edit_viewing_modal(viewing_id):
     form.rating.data = viewing.rating
     form.comment.data = viewing.comment
     form.watched_on.data = viewing.watched_on
-    form.with_partner.data = viewing.with_partner
+    # with_partner removed; shared diary by default
     form.rewatch.data = viewing.rewatch
     form.tags.data = ', '.join([tag.name for tag in viewing.tags])
     
@@ -313,7 +255,7 @@ def update_viewing(viewing_id):
         viewing.rating = form.rating.data
         viewing.comment = form.comment.data
         viewing.watched_on = form.watched_on.data
-        viewing.with_partner = form.with_partner.data
+        viewing.with_partner = True  # Always True since this is a shared diary
         viewing.rewatch = form.rewatch.data
         
         # Clear existing tags

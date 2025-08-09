@@ -56,7 +56,7 @@ class Viewing(db.Model):
     rating = db.Column(db.SmallInteger, nullable=False)
     comment = db.Column(db.Text, nullable=True)
     watched_on = db.Column(db.Date, nullable=False, default=date.today)
-    with_partner = db.Column(db.Boolean, nullable=False, default=True)
+    with_partner = db.Column(db.Boolean, nullable=False, default=True)  # Temporary - to be removed in migration
     rewatch = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

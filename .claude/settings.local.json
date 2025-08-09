@@ -7,7 +7,9 @@
       "Bash(mkdir:*)",
       "Bash(python manage.py:*)",
       "Bash(python:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(flask db migrate:*)",
+      "Bash(.venvScriptsactivate)"
     ],
     "deny": []
   }
