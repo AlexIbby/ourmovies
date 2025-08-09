@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{ media.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    
+    <!-- Hero Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
+        {% if backdrop_url %}
+            <div class="relative h-64 lg:h-96 bg-gradient-to-t from-black/50 to-transparent">
+                <img src="{{ backdrop_url }}" alt="{{ media.title }}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+            </div>
+        {% endif %}
+        
+        <div class="p-6 {% if backdrop_url %}-mt-24 relative z-10{% endif %}">
+            <div class="flex flex-col lg:flex-row lg:space-x-6">
+                <!-- Poster -->
+                <div class="flex-shrink-0 mx-auto lg:mx-0 mb-6 lg:mb-0">
+                    {% if poster_url %}
+                        <img src="{{ poster_url }}" alt="{{ media.title }}" class="w-48 h-72 object-cover rounded-lg shadow-lg">
+                    {% else %}
+                        <div class="w-48 h-72 bg-gray-200 dark:bg-gray-700 rounded-lg shadow-lg flex items-center justify-center">
+                            <span class="text-gray-400">No Poster</span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Details -->
+                <div class="flex-1 {% if backdrop_url %}text-white{% endif %}">
+                    <h1 class="text-3xl font-bold {% if not backdrop_url %}text-gray-900 dark:text-white{% endif %} mb-2">
+                        {{ media.title }}
+                    </h1>
+                    
+                    <div class="flex items-center space-x-4 text-sm {% if not backdrop_url %}text-gray-600 dark:text-gray-400{% else %}text-gray-200{% endif %} mb-4">
+                        <span>{{ media.release_year or 'TBA' }}</span>
+                        <span>•</span>
+                        <span class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-gray-800 dark:text-gray-200">
+                            {{ media.media_type.title() }}
+                        </span>
+                    </div>
+                    
+                    {% if media.cached_json and media.cached_json.overview %}
+                        <p class="text-sm {% if not backdrop_url %}text-gray-700 dark:text-gray-300{% else %}text-gray-100{% endif %} mb-6 leading-relaxed">
+                            {{ media.cached_json.overview }}
+                        </p>
+                    {% endif %}
+                    
+                    <!-- Action Button -->
+                    {% set current_user_viewing = alex_viewing if current_user.username == 'alex' else carrie_viewing %}
+                    {% if current_user_viewing %}
+                        <div class="flex space-x-3">
+                            <button onclick="showAddViewingModal()" 
+                                    class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition duration-150">
+                                Add Another Viewing
+                            </button>
+                            <button onclick="showEditViewingModal({{ current_user_viewing.id }})"
+                                    class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition duration-150">
+                                Edit My Review
+                            </button>
+                        </div>
+                    {% else %}
+                        <button onclick="showAddViewingModal()" 
+                                class="px-6 py-3 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition duration-150">
+                            Add to My Diary
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Ratings -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {% for user_name, viewing in [('Alex', alex_viewing), ('Carrie', carrie_viewing)] %}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    {{ user_name }}'s Review
+                </h3>
+                
+                {% if viewing %}
+                    <div class="space-y-3">
+                        <!-- Rating -->
+                        <div class="flex items-center space-x-2">
+                            <div class="flex text-yellow-400">
+                                {% for i in range(viewing.rating) %}⭐{% endfor %}
+                                {% if viewing.rating < 5 %}
+                                    {% for i in range(5 - viewing.rating) %}
+                                        <span class="text-gray-300 dark:text-gray-600">⭐</span>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">
+                                {{ viewing.rating }}/5
+                            </span>
+                        </div>
+                        
+                        <!-- Date -->
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            Watched on {{ viewing.watched_on.strftime('%B %d, %Y') }}
+                            {% if viewing.with_partner %} • Together{% endif %}
+                            {% if viewing.rewatch %} • Rewatch{% endif %}
+                        </p>
+                        
+                        <!-- Tags -->
+                        {% if viewing.tags %}
+                            <div class="flex flex-wrap gap-2">
+                                {% for tag in viewing.tags %}
+                                    <span class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">
+                                        {{ tag.name }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Comment -->
+                        {% if viewing.comment %}
+                            <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                <p class="text-sm text-gray-700 dark:text-gray-300">
+                                    "{{ viewing.comment }}"
+                                </p>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Edit button (if current user) -->
+                        {% if viewing.user == current_user %}
+                            <button onclick="showEditViewingModal({{ viewing.id }})"
+                                    class="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                                Edit Review
+                            </button>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253z" />
+                        </svg>
+                        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            {{ user_name }} hasn't watched this yet
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Cast (if available) -->
+    {% if media.cached_json and media.cached_json.credits and media.cached_json.credits.cast %}
+        <div class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Cast</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {% for cast_member in media.cached_json.credits.cast[:12] %}
+                    <div class="text-center">
+                        {% if cast_member.profile_path %}
+                            <img src="https://image.tmdb.org/t/p/w185{{ cast_member.profile_path }}" 
+                                 alt="{{ cast_member.name }}" 
+                                 class="w-full aspect-square object-cover rounded-lg mb-2">
+                        {% else %}
+                            <div class="w-full aspect-square bg-gray-200 dark:bg-gray-700 rounded-lg mb-2 flex items-center justify-center">
+                                <span class="text-xs text-gray-400">No Photo</span>
+                            </div>
+                        {% endif %}
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            {{ cast_member.name }}
+                        </h4>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 truncate">
+                            {{ cast_member.character }}
+                        </p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Add Viewing Modal Container -->
+<div id="viewing-modal" class="fixed inset-0 z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black opacity-50" onclick="hideViewingModal()"></div>
+        <div id="viewing-modal-content" class="z-50">
+            <!-- Modal content will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<script>
+function showAddViewingModal() {
+    // Load modal content via HTMX
+    htmx.ajax('GET', '{{ url_for("diary.add_viewing_modal", media_type=media.media_type, tmdb_id=media.tmdb_id) }}', {
+        target: '#viewing-modal-content',
+        swap: 'innerHTML'
+    }).then(() => {
+        document.getElementById('viewing-modal').classList.remove('hidden');
+    });
+}
+
+function showEditViewingModal(viewingId) {
+    // Load edit modal content via HTMX
+    htmx.ajax('GET', `/viewing/edit/${viewingId}`, {
+        target: '#viewing-modal-content',
+        swap: 'innerHTML'
+    }).then(() => {
+        document.getElementById('viewing-modal').classList.remove('hidden');
+    });
+}
+
+function hideViewingModal() {
+    document.getElementById('viewing-modal').classList.add('hidden');
+    document.getElementById('viewing-modal-content').innerHTML = '';
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        hideViewingModal();
+    }
+});
+
+// Handle HTMX events for modal updates
+document.addEventListener('viewing-updated', function() {
+    hideViewingModal();
+    location.reload(); // Refresh page to show updated data
+});
+
+document.addEventListener('viewing-added', function() {
+    hideViewingModal();
+    location.reload(); // Refresh page to show updated data
+});
+</script>
+{% endblock %}

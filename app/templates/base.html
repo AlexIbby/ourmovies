@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Alex & Carrie's Movie Diary{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.8"></script>
+    
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    </style>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+    
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="fixed top-4 right-4 z-50 space-y-2">
+                {% for category, message in messages %}
+                    <div class="max-w-sm bg-white dark:bg-gray-800 border-l-4 {% if category == 'error' %}border-red-400{% elif category == 'success' %}border-green-400{% else %}border-blue-400{% endif %} p-4 rounded-lg shadow-lg" 
+                         x-data="{ show: true }" 
+                         x-show="show" 
+                         x-transition 
+                         x-init="setTimeout(() => show = false, 5000)">
+                        <div class="flex">
+                            <div class="ml-3">
+                                <p class="text-sm {% if category == 'error' %}text-red-700 dark:text-red-300{% elif category == 'success' %}text-green-700 dark:text-green-300{% else %}text-blue-700 dark:text-blue-300{% endif %}">
+                                    {{ message }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <div class="flex flex-col min-h-screen">
+        <!-- Header -->
+        {% if current_user.is_authenticated %}
+        <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">
+                            {% block page_title %}Movie Diary{% endblock %}
+                        </h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-600 dark:text-gray-300">
+                            Hi, {{ current_user.username.title() }}!
+                        </span>
+                        <form method="POST" action="{{ url_for('auth.logout') }}" class="inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" 
+                                    class="text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                                Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </header>
+        {% endif %}
+
+        <!-- Main Content Area -->
+        <main class="flex-1 {% if current_user.is_authenticated %}pb-20{% endif %}">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Bottom Navigation (Mobile) -->
+        {% if current_user.is_authenticated %}
+        <nav class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 lg:hidden">
+            <div class="grid grid-cols-3 h-16">
+                <a href="{{ url_for('diary.my_diary') }}" 
+                   class="flex flex-col items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253z" />
+                    </svg>
+                    My Diary
+                </a>
+                <a href="{{ url_for('diary.together_diary') }}" 
+                   class="flex flex-col items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                    Together
+                </a>
+                <button onclick="showSearchModal()" 
+                        class="flex flex-col items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400">
+                    <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    Search
+                </button>
+            </div>
+        </nav>
+        {% endif %}
+    </div>
+
+    <!-- Search Modal -->
+    <div id="search-modal" class="fixed inset-0 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black opacity-50" onclick="hideSearchModal()"></div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl z-50">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">Search Movies & TV</h3>
+                        <button onclick="hideSearchModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <input type="text" 
+                               id="search-input"
+                               name="q"
+                               placeholder="Search for movies and TV shows..."
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                               hx-get="/search"
+                               hx-trigger="keyup changed delay:500ms"
+                               hx-target="#search-results"
+                               hx-include="this">
+                        <div id="search-results" class="max-h-96 overflow-y-auto">
+                            <!-- Search results will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Viewing Modal -->
+    <div id="viewing-modal" class="fixed inset-0 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-black opacity-50" onclick="hideViewingModal()"></div>
+            <div id="viewing-modal-content" class="z-50">
+                <!-- Modal content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Alpine.js for interactivity -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <script>
+        function showSearchModal() {
+            document.getElementById('search-modal').classList.remove('hidden');
+            document.getElementById('search-input').focus();
+        }
+        
+        function hideSearchModal() {
+            document.getElementById('search-modal').classList.add('hidden');
+            document.getElementById('search-results').innerHTML = '';
+            document.getElementById('search-input').value = '';
+        }
+        
+        function showViewingModal() {
+            const modal = document.getElementById('viewing-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+        
+        function hideViewingModal() {
+            const modal = document.getElementById('viewing-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                const content = document.getElementById('viewing-modal-content');
+                if (content) {
+                    content.innerHTML = '';
+                }
+            }
+        }
+        
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideSearchModal();
+                hideViewingModal();
+            }
+        });
+        
+        // Handle viewing added event from HTMX
+        document.body.addEventListener('viewing-added', function() {
+            hideViewingModal();
+            location.reload(); // Refresh the page to show the new viewing
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

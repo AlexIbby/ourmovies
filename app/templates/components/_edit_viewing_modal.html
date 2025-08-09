@@ -1,0 +1,357 @@
+<style>
+/* Inline styles to ensure styling works in HTMX loaded content */
+.modal-form {
+    background-color: #1f2937;
+    border-radius: 8px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    padding: 1.5rem;
+    max-width: 42rem;
+    width: 100%;
+    margin: 0 1rem;
+}
+
+.modal-form h3, .modal-form h4 {
+    font-weight: 700;
+    color: #f9fafb;
+    margin: 0;
+    padding: 0;
+}
+
+.modal-form h3 {
+    font-size: 1.25rem;
+}
+
+.modal-form h4 {
+    font-size: 1.125rem;
+    margin-bottom: 0.25rem;
+}
+
+.modal-form label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #f9fafb;
+    margin-bottom: 0.5rem;
+}
+
+.modal-form input[type="text"],
+.modal-form input[type="date"],
+.modal-form textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    background-color: #374151;
+    color: #f9fafb;
+    font-size: 0.875rem;
+}
+
+.modal-form input[type="text"]:focus,
+.modal-form input[type="date"]:focus,
+.modal-form textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-form .checkbox-label {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #f9fafb;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+}
+
+.modal-form input[type="checkbox"] {
+    margin-right: 0.5rem;
+    width: 1rem;
+    height: 1rem;
+}
+
+.modal-form .btn-cancel {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #d1d5db;
+    background-color: #374151;
+    border: 1px solid #4b5563;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    margin-right: 0.75rem;
+}
+
+.modal-form .btn-cancel:hover {
+    background-color: #4b5563;
+}
+
+.modal-form .btn-submit {
+    padding: 0.5rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    background-color: #2563eb;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.modal-form .btn-submit:hover {
+    background-color: #1d4ed8;
+}
+
+.modal-form .star {
+    font-size: 1.5rem;
+    color: #4b5563;
+    cursor: pointer;
+    transition: color 0.15s ease-in-out;
+    user-select: none;
+    opacity: 0.3;
+}
+
+.modal-form .star:hover,
+.modal-form .star.active {
+    color: #fbbf24;
+    opacity: 1;
+}
+
+.modal-form .form-section {
+    margin-bottom: 1rem;
+}
+
+.modal-form .button-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+.modal-form .movie-info {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.modal-form .poster {
+    width: 6rem;
+    height: 9rem;
+    object-fit: cover;
+    border-radius: 0.5rem;
+}
+
+.modal-form .poster-placeholder {
+    width: 6rem;
+    height: 9rem;
+    background-color: #4b5563;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    font-size: 0.75rem;
+}
+
+.modal-form .movie-details {
+    flex: 1;
+}
+
+.modal-form .movie-meta {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #9ca3af;
+    margin-bottom: 0.5rem;
+}
+
+.modal-form .movie-description {
+    font-size: 0.875rem;
+    color: #d1d5db;
+    line-height: 1.4;
+}
+
+.modal-form .close-btn {
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0.25rem;
+}
+
+.modal-form .close-btn:hover {
+    color: #f9fafb;
+}
+</style>
+
+<div class="modal-form">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+        <h3>Edit Review</h3>
+        <button onclick="hideViewingModal()" class="close-btn">
+            <svg style="width: 1.5rem; height: 1.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+    
+    <div class="movie-info">
+        {% if poster_url %}
+            <img src="{{ poster_url }}" alt="{{ media.title }}" class="poster">
+        {% else %}
+            <div class="poster-placeholder">
+                <span>No Poster</span>
+            </div>
+        {% endif %}
+        
+        <div class="movie-details">
+            <h4>{{ media.title }}</h4>
+            <p class="movie-meta">{{ media.release_year or 'TBA' }} • {{ media.media_type.title() }}</p>
+            {% if media.cached_json and media.cached_json.overview %}
+                <p class="movie-description">
+                    {{ media.cached_json.overview[:200] }}{% if media.cached_json.overview|length > 200 %}...{% endif %}
+                </p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <form method="POST" action="{{ url_for('diary.update_viewing', viewing_id=viewing.id) }}" 
+          hx-put="{{ url_for('diary.update_viewing', viewing_id=viewing.id) }}" 
+          hx-target="#viewing-modal-content" 
+          hx-swap="innerHTML">
+        {{ form.hidden_tag() }}
+        {{ form.tmdb_id() }}
+        {{ form.media_type() }}
+        
+        <!-- Rating -->
+        <div class="form-section">
+            <label>{{ form.rating.label.text }}</label>
+            <div style="display: flex; gap: 0.25rem;">
+                {% for value in range(1, 6) %}
+                    <label style="margin: 0;">
+                        <input type="radio" name="rating" value="{{ value }}" style="display: none;" class="rating-input" {% if form.rating.data == value %}checked{% endif %}>
+                        <span class="star" data-rating="{{ value }}">⭐</span>
+                    </label>
+                {% endfor %}
+            </div>
+            {% for error in form.rating.errors %}
+                <p style="margin-top: 0.25rem; font-size: 0.875rem; color: #dc2626;">{{ error }}</p>
+            {% endfor %}
+        </div>
+        
+        <!-- Tags -->
+        <div class="form-section">
+            <label for="{{ form.tags.id }}">{{ form.tags.label.text }}</label>
+            {{ form.tags(placeholder="Enter tags separated by commas") }}
+            {% for error in form.tags.errors %}
+                <p style="margin-top: 0.25rem; font-size: 0.875rem; color: #dc2626;">{{ error }}</p>
+            {% endfor %}
+        </div>
+        
+        <!-- Date -->
+        <div class="form-section">
+            <label for="{{ form.watched_on.id }}">{{ form.watched_on.label.text }}</label>
+            {{ form.watched_on() }}
+            {% for error in form.watched_on.errors %}
+                <p style="margin-top: 0.25rem; font-size: 0.875rem; color: #dc2626;">{{ error }}</p>
+            {% endfor %}
+        </div>
+        
+        <!-- Checkboxes -->
+        <div class="form-section">
+            <label class="checkbox-label">
+                {{ form.with_partner() }}
+                <span>Watched together</span>
+            </label>
+            
+            <label class="checkbox-label">
+                {{ form.rewatch() }}
+                <span>This is a rewatch</span>
+            </label>
+        </div>
+        
+        <!-- Comment -->
+        <div class="form-section">
+            <label for="{{ form.comment.id }}">{{ form.comment.label.text }}</label>
+            {{ form.comment(rows="3") }}
+            {% for error in form.comment.errors %}
+                <p style="margin-top: 0.25rem; font-size: 0.875rem; color: #dc2626;">{{ error }}</p>
+            {% endfor %}
+        </div>
+        
+        <!-- Submit -->
+        <div class="button-row">
+            <button type="button" onclick="hideViewingModal()" class="btn-cancel">
+                Cancel
+            </button>
+            <button type="submit" class="btn-submit">Update Review</button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Initialize stars based on form data
+function initializeStars() {
+    const checkedRating = document.querySelector('input[name="rating"]:checked');
+    const rating = checkedRating ? parseInt(checkedRating.value) : 0;
+    
+    document.querySelectorAll('.star').forEach((s, index) => {
+        if (index < rating) {
+            s.style.color = '#fbbf24';
+            s.style.opacity = '1';
+            s.classList.add('active');
+        } else {
+            s.style.color = '#4b5563';
+            s.style.opacity = '0.3';
+            s.classList.remove('active');
+        }
+    });
+}
+
+// Star rating functionality
+document.querySelectorAll('.star').forEach(star => {
+    star.addEventListener('click', function() {
+        const rating = parseInt(this.dataset.rating);
+        const ratingInput = document.querySelector('input[name="rating"][value="' + rating + '"]');
+        if (ratingInput) {
+            ratingInput.checked = true;
+        }
+        
+        // Update star display
+        document.querySelectorAll('.star').forEach((s, index) => {
+            if (index < rating) {
+                s.classList.add('active');
+            } else {
+                s.classList.remove('active');
+            }
+        });
+    });
+    
+    star.addEventListener('mouseenter', function() {
+        const rating = parseInt(this.dataset.rating);
+        document.querySelectorAll('.star').forEach((s, index) => {
+            if (index < rating) {
+                s.style.color = '#fbbf24';
+                s.style.opacity = '1';
+            } else {
+                s.style.color = '#4b5563';
+                s.style.opacity = '0.3';
+            }
+        });
+    });
+});
+
+// Initialize stars when modal loads
+initializeStars();
+
+// Reset stars on mouse leave
+document.querySelector('.modal-form').addEventListener('mouseleave', function() {
+    const checkedRating = document.querySelector('input[name="rating"]:checked');
+    const rating = checkedRating ? parseInt(checkedRating.value) : 0;
+    
+    document.querySelectorAll('.star').forEach((s, index) => {
+        if (index < rating) {
+            s.style.color = '#fbbf24';
+            s.style.opacity = '1';
+        } else {
+            s.style.color = '#4b5563';
+            s.style.opacity = '0.3';
+        }
+    });
+});
+</script>

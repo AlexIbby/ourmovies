@@ -1,0 +1,184 @@
+/* Custom styles for the movie diary app */
+
+/* Ensure headings are always visible */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600 !important;
+    color: inherit !important;
+}
+
+/* Dark mode heading colors */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    color: #f9fafb !important;
+}
+
+/* Light mode heading colors */
+h1, h2, h3, h4, h5, h6 {
+    color: #111827 !important;
+}
+
+/* Modal styling enhancements */
+.modal-overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+/* Star rating enhancements */
+.star {
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+    user-select: none;
+}
+
+.star:hover {
+    transform: scale(1.1);
+}
+
+/* Form styling */
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Ensure form inputs are properly styled */
+input[type="text"], 
+input[type="email"], 
+input[type="password"], 
+input[type="date"], 
+textarea, 
+select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background-color: #fff;
+    color: #111827;
+    transition: all 0.15s ease-in-out;
+}
+
+input[type="text"]:focus, 
+input[type="email"]:focus, 
+input[type="password"]:focus, 
+input[type="date"]:focus, 
+textarea:focus, 
+select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Dark mode form inputs */
+.dark input[type="text"], 
+.dark input[type="email"], 
+.dark input[type="password"], 
+.dark input[type="date"], 
+.dark textarea, 
+.dark select {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+}
+
+.dark input[type="text"]:focus, 
+.dark input[type="email"]:focus, 
+.dark input[type="password"]:focus, 
+.dark input[type="date"]:focus, 
+.dark textarea:focus, 
+.dark select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Button styling */
+.btn-primary {
+    background-color: #3b82f6;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: background-color 0.15s ease-in-out;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    background-color: #2563eb;
+}
+
+.btn-secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-secondary:hover {
+    background-color: #e5e7eb;
+}
+
+.dark .btn-secondary {
+    background-color: #374151;
+    color: #d1d5db;
+}
+
+.dark .btn-secondary:hover {
+    background-color: #4b5563;
+}
+
+/* Tag chips styling */
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    background-color: #e5e7eb;
+    color: #374151;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.dark .tag-chip {
+    background-color: #374151;
+    color: #d1d5db;
+}
+
+/* Ensure modal content is properly styled */
+.modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .modal-content {
+        margin: 1rem;
+        max-width: calc(100vw - 2rem);
+    }
+}
+
+/* Animation for modal */
+.modal-enter {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+.modal-enter-active {
+    opacity: 1;
+    transform: scale(1);
+    transition: all 0.2s ease-out;
+}
+
+.modal-leave {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.modal-leave-active {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: all 0.15s ease-in;
+}

@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    
+    <!-- Filters -->
+    <div class="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div class="space-y-4 lg:space-y-0 lg:flex lg:items-end lg:space-x-4">
+            <form method="GET" class="flex-1">
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                    <!-- Year Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year</label>
+                        <select name="year" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="">All Years</option>
+                            {% for year in years %}
+                                <option value="{{ year }}" {% if current_filters.year == year %}selected{% endif %}>
+                                    {{ year }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Media Type Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                        <select name="media_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="">All</option>
+                            <option value="movie" {% if current_filters.media_type == 'movie' %}selected{% endif %}>Movies</option>
+                            <option value="tv" {% if current_filters.media_type == 'tv' %}selected{% endif %}>TV Shows</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Rating Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rating</label>
+                        <select name="rating" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="">All Ratings</option>
+                            <option value="5" {% if current_filters.rating == 5 %}selected{% endif %}>⭐⭐⭐⭐⭐ 5 stars</option>
+                            <option value="4" {% if current_filters.rating == 4 %}selected{% endif %}>⭐⭐⭐⭐ 4+ stars</option>
+                            <option value="3" {% if current_filters.rating == 3 %}selected{% endif %}>⭐⭐⭐ 3+ stars</option>
+                            <option value="2" {% if current_filters.rating == 2 %}selected{% endif %}>⭐⭐ 2+ stars</option>
+                            <option value="1" {% if current_filters.rating == 1 %}selected{% endif %}>⭐ 1+ star</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Sort -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sort</label>
+                        <select name="sort" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500">
+                            <option value="newest" {% if current_filters.sort == 'newest' %}selected{% endif %}>Newest First</option>
+                            <option value="highest_rated" {% if current_filters.sort == 'highest_rated' %}selected{% endif %}>Highest Rated</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Filter Button -->
+                    <div>
+                        <button type="submit" class="w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition duration-150">
+                            Filter
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Add Movie Button -->
+            <div class="mt-4 lg:mt-0 lg:ml-4 flex-shrink-0">
+                <button type="button" onclick="showSearchModal()" 
+                        class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-150 flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    <span>Add Movie</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results -->
+    {% if viewings.items %}
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {% for viewing in viewings.items %}
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-md transition duration-150">
+                    <a href="{{ url_for('media.title_detail', media_type=viewing.media.media_type, tmdb_id=viewing.media.tmdb_id) }}" 
+                       class="block">
+                        {% set poster_url = viewing.media.poster_path %}
+                        {% if poster_url %}
+                            <img src="https://image.tmdb.org/t/p/w342{{ poster_url }}" 
+                                 alt="{{ viewing.media.title }}" 
+                                 class="w-full aspect-[2/3] object-cover">
+                        {% else %}
+                            <div class="w-full aspect-[2/3] bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                <span class="text-gray-400 text-sm">No Poster</span>
+                            </div>
+                        {% endif %}
+                    </a>
+                    
+                    <div class="p-3">
+                        <h3 class="font-medium text-sm text-gray-900 dark:text-white truncate" title="{{ viewing.media.title }}">
+                            {{ viewing.media.title }}
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {{ viewing.media.release_year or 'TBA' }} • {{ viewing.media.media_type.title() }}
+                        </p>
+                        
+                        <div class="flex items-center justify-between mt-2">
+                            <div class="flex text-yellow-400">
+                                {% for i in range(viewing.rating) %}⭐{% endfor %}
+                                {% if viewing.rating < 5 %}
+                                    {% for i in range(5 - viewing.rating) %}
+                                        <span class="text-gray-300 dark:text-gray-600">⭐</span>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                            <span class="text-xs text-gray-400">
+                                {{ viewing.watched_on.strftime('%m/%d') }}
+                            </span>
+                        </div>
+                        
+                        {% if viewing.tags %}
+                            <div class="mt-2">
+                                {% for tag in viewing.tags[:2] %}
+                                    <span class="inline-block px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded mr-1">
+                                        {{ tag.name }}
+                                    </span>
+                                {% endfor %}
+                                {% if viewing.tags|length > 2 %}
+                                    <span class="text-xs text-gray-400">+{{ viewing.tags|length - 2 }}</span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        
+                        {% if viewing.user.username != current_user.username %}
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                by {{ viewing.user.username.title() }}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if viewings.pages > 1 %}
+            <div class="mt-8 flex justify-center">
+                <nav class="flex space-x-2">
+                    {% if viewings.has_prev %}
+                        <a href="{{ url_for(request.endpoint, page=viewings.prev_num, **current_filters) }}" 
+                           class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            Previous
+                        </a>
+                    {% endif %}
+                    
+                    {% for page_num in viewings.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != viewings.page %}
+                                <a href="{{ url_for(request.endpoint, page=page_num, **current_filters) }}" 
+                                   class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    {{ page_num }}
+                                </a>
+                            {% else %}
+                                <span class="px-3 py-2 text-sm bg-primary-600 text-white border border-primary-600 rounded-lg">
+                                    {{ page_num }}
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="px-3 py-2 text-sm">...</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if viewings.has_next %}
+                        <a href="{{ url_for(request.endpoint, page=viewings.next_num, **current_filters) }}" 
+                           class="px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                            Next
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+        {% endif %}
+        
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-12">
+            <svg class="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2M7 4h10M7 4l-3 16h16L17 4M9 8v8M15 8v8" />
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-white">No movies or TV shows yet</h3>
+            <p class="mt-2 text-gray-500 dark:text-gray-400">
+                {% if page_title == 'Together' %}
+                    Start adding movies and TV shows you've watched together!
+                {% else %}
+                    Start adding movies and TV shows to your diary!
+                {% endif %}
+            </p>
+            <div class="mt-4">
+                <button onclick="showSearchModal()" 
+                        class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition duration-150">
+                    Search Movies & TV
+                </button>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
