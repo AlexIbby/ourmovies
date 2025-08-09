@@ -186,16 +186,6 @@
     {% endif %}
 </div>
 
-<!-- Add Viewing Modal Container -->
-<div id="viewing-modal" class="fixed inset-0 z-50 hidden">
-    <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="fixed inset-0 bg-black opacity-50" onclick="hideViewingModal()"></div>
-        <div id="viewing-modal-content" class="z-50">
-            <!-- Modal content will be loaded here -->
-        </div>
-    </div>
-</div>
-
 <!-- Delete Confirmation Modal -->
 <div id="delete-modal" class="fixed inset-0 z-50 hidden">
     <div class="flex items-center justify-center min-h-screen px-4">
@@ -301,12 +291,12 @@ document.addEventListener('keydown', function(e) {
 });
 
 // Handle HTMX events for modal updates
-document.addEventListener('viewing-updated', function() {
+document.body.addEventListener('viewing-updated', function() {
     hideViewingModal();
     location.reload(); // Refresh page to show updated data
 });
 
-document.addEventListener('viewing-added', function() {
+document.body.addEventListener('viewing-added', function() {
     hideViewingModal();
     location.reload(); // Refresh page to show updated data
 });

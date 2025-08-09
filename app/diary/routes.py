@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, flash, jsonify
+from flask import render_template, request, redirect, url_for, flash, jsonify, make_response
 from flask_login import login_required, current_user
 from sqlalchemy import or_, and_, desc
 from . import bp
@@ -7,6 +7,19 @@ from ..models import Media, Viewing, Tag, User, viewing_tags
 from ..extensions import db
 from ..media.tmdb import tmdb_client
 from datetime import datetime, date
+
+def _parse_tag_names(raw: str) -> list[str]:
+    if not raw:
+        return []
+    names = [n.strip().lower() for n in raw.split(",")]
+    # drop empties and dedupe while preserving order
+    seen = set()
+    out = []
+    for n in names:
+        if n and n not in seen:
+            seen.add(n)
+            out.append(n)
+    return out
 
 @bp.route('/diary/me')
 @login_required
@@ -214,7 +227,6 @@ def create_viewing():
             rating=form.rating.data,
             comment=form.comment.data,
             watched_on=form.watched_on.data,
-            with_partner=True,  # Always True since this is a shared diary
             rewatch=form.rewatch.data
         )
         
@@ -223,16 +235,12 @@ def create_viewing():
         
         # Handle tags
         if form.tags.data:
-            tag_names = [name.strip() for name in form.tags.data.split(',') if name.strip()]
+            tag_names = _parse_tag_names(form.tags.data)
             for tag_name in tag_names:
-                tag = Tag.query.filter_by(name=tag_name.lower()).first()
+                tag = Tag.query.filter_by(name=tag_name).first()
                 if not tag:
-                    tag = Tag(
-                        name=tag_name.lower(),
-                        slug=Tag.create_slug(tag_name)
-                    )
+                    tag = Tag(name=tag_name)
                     db.session.add(tag)
-                    db.session.flush()
                 viewing.tags.append(tag)
         
         db.session.commit()
@@ -240,7 +248,6 @@ def create_viewing():
         
         # If HTMX request, return a response that triggers modal close and page refresh
         if request.headers.get('HX-Request'):
-            from flask import make_response
             response = make_response('')
             response.headers['HX-Trigger'] = 'viewing-added'
             return response
@@ -319,7 +326,9 @@ def update_viewing(viewing_id):
     
     form = ViewingForm()
     
-    if form.validate_on_submit():
+    # NOTE: validate_on_submit() only returns True for POST. We accept PUT via HTMX,
+    # so call validate() directly (this will also validate CSRF).
+    if form.validate():
         # Update viewing
         viewing.rating = form.rating.data
         viewing.comment = form.comment.data
@@ -331,19 +340,19 @@ def update_viewing(viewing_id):
         
         # Handle new tags
         if form.tags.data:
-            # Split and clean tag names
-            tag_names = [name.strip().lower() for name in form.tags.data.split(',') if name.strip()]
+            tag_names = _parse_tag_names(form.tags.data)
             
             # Get or create each tag
             for tag_name in tag_names:
                 tag = Tag.query.filter_by(name=tag_name).first()
                 if not tag:
-                    tag = Tag(name=tag_name, slug=Tag.create_slug(tag_name))
+                    tag = Tag(name=tag_name)
                     db.session.add(tag)
                 viewing.tags.append(tag)
         
         try:
             db.session.commit()
+            flash(f'Updated viewing for {viewing.media.title}!', 'success')
             # If HTMX request, trigger refresh
             if request.headers.get('HX-Request'):
                 response = make_response('')
@@ -383,6 +392,6 @@ def tags_autocomplete():
         return jsonify([])
     
     tags = Tag.query.filter(Tag.name.ilike(f'%{q}%')).limit(10).all()
-    suggestions = [{'name': tag.name, 'slug': tag.slug} for tag in tags]
+    suggestions = [{'name': tag.name} for tag in tags]
     
     return jsonify(suggestions)

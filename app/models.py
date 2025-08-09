@@ -28,7 +28,7 @@ class Media(db.Model):
     __tablename__ = 'media'
     
     id = db.Column(db.Integer, primary_key=True)
-    tmdb_id = db.Column(db.Integer, unique=True, nullable=False, index=True)
+    tmdb_id = db.Column(db.Integer, nullable=False, index=True)
     media_type = db.Column(db.Enum('movie', 'tv', name='media_type_enum'), nullable=False)
     title = db.Column(db.Text, nullable=False)
     release_year = db.Column(db.Integer, nullable=True)
@@ -42,6 +42,7 @@ class Media(db.Model):
     
     __table_args__ = (
         Index('ix_media_type_title', 'media_type', 'title'),
+        db.UniqueConstraint('tmdb_id', 'media_type', name='uq_tmdb_id_media_type'),
     )
     
     def __repr__(self):
@@ -56,7 +57,6 @@ class Viewing(db.Model):
     rating = db.Column(db.SmallInteger, nullable=False)
     comment = db.Column(db.Text, nullable=True)
     watched_on = db.Column(db.Date, nullable=False, default=date.today)
-    with_partner = db.Column(db.Boolean, nullable=False, default=True)  # Temporary - to be removed in migration
     rewatch = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

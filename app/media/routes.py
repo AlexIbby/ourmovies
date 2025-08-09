@@ -1,4 +1,4 @@
-from flask import render_template, request, jsonify, redirect, url_for
+from flask import render_template, request, jsonify, redirect, url_for, current_app
 from flask_login import login_required
 from . import bp
 from .tmdb import tmdb_client

@@ -41,6 +41,12 @@ def create_app(config_name=None):
     from .routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
+    # Jinja helper: tmdb_image_url(path, size)
+    @app.context_processor
+    def inject_tmdb_utils():
+        from .media.tmdb import tmdb_client
+        return {"tmdb_image_url": tmdb_client.build_image_url}
+
     # Main routes
     @app.route('/')
     def index():

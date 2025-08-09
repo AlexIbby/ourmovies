@@ -218,6 +218,12 @@
             hideViewingModal();
             location.reload(); // Refresh the page to show the new viewing
         });
+
+        // Handle viewing updated event from HTMX
+        document.body.addEventListener('viewing-updated', function() {
+            hideViewingModal();
+            location.reload(); // Refresh page to show updated data
+        });
     </script>
     
     {% block scripts %}{% endblock %}
