@@ -9,7 +9,8 @@
       "Bash(python:*)",
       "Bash(git add:*)",
       "Bash(flask db migrate:*)",
-      "Bash(.venvScriptsactivate)"
+      "Bash(.venvScriptsactivate)",
+      "Bash(git commit:*)"
     ],
     "deny": []
   }
